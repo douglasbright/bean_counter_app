@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Bean Counter{% endblock %}
+
+{% block sidebar %}
+    <canvas id="coffeePieChart" width="200" height="200"></canvas>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var coffeeChartData = {{ coffee_chart_data | tojson }};
+            var ctx = document.getElementById('coffeePieChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: coffeeChartData,
+                options: {
+                    responsive: true,
+                    legend: {
+                        position: 'bottom',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Coffees Purchased Per Team Member'
+                    }
+                }
+            });
+        });
+    </script>
+{% endblock %}
+
+{% block maincontent %}
+    <h1>Welcome to Bean Counter</h1>
+    <p>This is the main content of the index page.</p>
+    <body>
+        <form action="{{ url_for('reset_shouts_route') }}" method="POST">
+          <button type="submit" class="btn btn-danger">Reset Shouts</button>
+        </form>
+      </body>
+      
+{% endblock %}
+
+
+

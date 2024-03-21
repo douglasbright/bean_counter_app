@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block maincontent %}
+
+<div class="container mt-3">
+    <h2>Coffee Purchase Matrix</h2>
+    <table class="table table-bordered table-hover"> <!-- Add table-hover for the hover effect -->
+        <thead>
+            <tr>
+                <th>Purchaser \ Receiver</th>
+                {% for name in names_list %}
+                <th>{{ name }}</th>
+                {% endfor %}
+                <th>Total Purchases</th> <!-- New column for total purchases -->
+            </tr>
+        </thead>
+        <tbody>
+            {% for purchaser in names_list %}
+            <tr>
+                <td>{{ purchaser }}</td>
+                {% for receiver in names_list %}
+                <!-- Safe access with .get() and a default value of 0 -->
+                <td>{{ matrix_dict.get(purchaser, {}).get(receiver, 0) }}</td>
+                {% endfor %}
+                <!-- Safe access for total purchases per person, defaulting to 0 if not found -->
+                <td>{{ total_purchases_dict.get(purchaser, 0) }}</td>
+            </tr>
+            {% endfor %}
+            <tr>
+                <th colspan="{{ names_list|length + 1 }}">Grand Total</th> <!-- Span the grand total cell -->
+                <th>{{ grand_total_coffees }}</th>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

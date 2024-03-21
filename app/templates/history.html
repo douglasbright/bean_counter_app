@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block maincontent %}
+
+<div class="container mt-5">
+    <h2>Shout History</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Round Number</th>
+                <th>Completed By</th>
+                <th>Attendees</th>
+                <th>Absentees</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for history in history_data %}
+            <tr>
+                <td>{{ history.round_id }}</td>
+                <td>{{ history.completed_by }}</td>
+                <td>{{ history.attendees }}</td>
+                <td>{{ history.absentees }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
