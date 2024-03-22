@@ -2,31 +2,25 @@
 {% block sidebar %}
     {{ super() }}
     <div>
-        <h3>Last 10 Shouts</h3>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Round</th>
-                    <th>Shouter</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for shout in last_10_shouts %}
-                <tr>
-                    <td>{{ shout.round_id }}</td>
-                    <td>{{ shout.shouter }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <h4>Last 10 Shouts</h4>
+        <div class="list-group">
+            {% for shout in last_10_shouts %}
+            <div class="list-group-item">
+                <div>Round: {{ shout.round_id }}</div>
+                <div>{{ shout.date.strftime('%a %d/%m') }}</div>
+                <div class="fw-bold">{{ shout.shouter }}</div>
+            </div>
+            {% endfor %}
+        </div>
     </div>
 {% endblock %}
+
 
 {% block maincontent %}
 <div class="container mt-3"> 
     <p>Current Round Number: {{ current_round.id }}</p>
     {% if current_shouter %}
-        <p>Current Shouter: {{ current_shouter.name }}</p>
+        <h4>Current Shouter: {{ current_shouter.name }}</h4>
 
         <!-- Form for completing the shout -->
         <form action="{{ url_for('complete_shout') }}" method="POST" class="mb-3">
@@ -39,15 +33,25 @@
             <h5>Select Attendees:</h5>
             <ul class="list-group mb-3">
                 {% for member in active_members %}
-                    <li class="list-group-item">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="attendee_ids" value="{{ member.id }}" id="attendee-{{ member.id }}">
-                            <label class="form-check-label" for="attendee-{{ member.id }}">
-                                {{ member.name }}
-                            </label>
-                        </div>
-                    </li>
-                {% endfor %}
+                <li class="list-group-item">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="attendee_ids" value="{{ member.id }}" id="attendee-{{ member.id }}"
+                            {{ 'checked' if member.id == current_shouter.id else '' }}>
+                        <label class="form-check-label stretched-link" for="attendee-{{ member.id }}">
+                            {{ member.name }}
+                        </label>
+                    </div>
+                </li>
+            {% endfor %}
+
+            <li class="list-group-item">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="selectAllAttendees">
+                    <label class="form-check-label" for="selectAllAttendees">
+                        Select All
+                    </label>
+                </div>
+            </li>        
             </ul>
 
             <!-- Button container -->
@@ -81,4 +85,21 @@
         });
     });
     </script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Select All functionality
+        document.getElementById('selectAllAttendees').addEventListener('change', function(event) {
+            // Determine if the "Select All" checkbox is checked
+            var isChecked = event.target.checked;
+            // Find all attendee checkboxes
+            var checkboxes = document.querySelectorAll('input[type="checkbox"][name="attendee_ids"]');
+            // Set each checkbox's checked state to match the "Select All" checkbox
+            checkboxes.forEach(function(checkbox) {
+                checkbox.checked = isChecked;
+            });
+        });
+    });
+    </script>
+    
 {% endblock %}

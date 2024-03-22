@@ -71,14 +71,15 @@ def index():
     coffee_chart_data = prepare_coffee_chart_data()
     return render_template('index.html', coffee_chart_data=coffee_chart_data)
 
-@app.route('/reset_shouts', methods=['GET', 'POST'])
+@app.route('/reset_shouts', methods=['POST'])
 def reset_shouts_route():
-    if request.method == 'POST':
-        message = reset_shouts()
-        return render_template('index.html', message=message)  # Assuming you render messages on index.html
-    else:
-        # Display confirmation message or form (optional)
-        return render_template('index.html')  # Optional confirmation page
+    try:
+        reset_shouts()  # Perform the reset operation
+        flash('Shout data reset successfully!', 'success')  # Optional: Flash a success message
+    except Exception as e:
+        flash(f'An error occurred: {e}', 'error')  # Optional: Flash an error message
+
+    return redirect(url_for('index'))  # Redirect to the index route or another appropriate page
 
 @app.route('/shout')
 def shout_page():
