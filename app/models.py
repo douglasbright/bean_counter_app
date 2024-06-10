@@ -7,10 +7,11 @@ class Person(db.Model):
     name = db.Column(db.String, unique=True)
     available = db.Column(db.Boolean, default=True)
     catchup_due = db.Column(db.Boolean, default=False)
-    active = db.Column(db.Boolean, default=True)  # New status field
+    active = db.Column(db.Boolean, default=True)
     absences = db.relationship("ShoutAbsence", back_populates="person")
     is_current_shouter = db.Column(db.Boolean, default=False)
-    attendance_records = db.relationship("Attendee", back_populates="person") 
+    attendance_records = db.relationship("Attendee", back_populates="person")
+    shout_sequence = db.Column(db.Integer, unique=True)  # New field for shout sequence
 
 class ShoutRound(db.Model):
     __tablename__ = 'shout_rounds'

@@ -14,18 +14,19 @@ def get_or_create_current_round():
     return current_round
 
 def determine_current_shouter():
-    # 1. Check for existing shouter among active members
-    active_member_ids = get_active_member_ids()  # Get IDs of active members
+    # Get the IDs of active members
+    active_member_ids = get_active_member_ids()
+
+    # Check if there is an existing shouter among active members
     current_shouter = Person.query.filter_by(is_current_shouter=True)\
                                    .filter(Person.id.in_(active_member_ids)).first()
     if current_shouter:
         return current_shouter
 
-    # 2. Get current round
+    # Get the current round
     current_round = get_or_create_current_round()
- 
-    # 3. Prioritize catchup_due, excluding those absent in the current round 
-    print("current_round.id:", current_round.id) # Debug output
+
+    # Prioritize catchup_due, excluding those absent in the current round
     # Subquery to find persons who are absent in the current round
     subquery = (db.session.query(ShoutAbsence.person_id)
                 .filter(ShoutAbsence.round_id == current_round.id)
@@ -36,27 +37,23 @@ def determine_current_shouter():
                   .filter(Person.id.in_(active_member_ids))  # Ensure only active members are considered
                   .filter(~exists().where(Person.id == subquery.c.person_id))  # Exclude those absent in the current round
                   .filter(Person.catchup_due == True)  # Filter for catchup due
-                  .order_by(Person.id)  # Order by Person ID
+                  .order_by(Person.shout_sequence)  # Order by shout_sequence
                   .all())
-    print("candidates:", [c.name for c in candidates]) # Debug output
+
+    # If there are candidates with catchup_due, select the first one
     if candidates:
         current_shouter = candidates[0]
         current_shouter.is_current_shouter = True
         current_shouter.available = False
         db.session.commit()
-        print("---- Current Shouter Status ----")
-        print(f"Name: {current_shouter.name}")  
-        print(f"is_current_shouter: {current_shouter.is_current_shouter}")
-        print(f"available: {current_shouter.available}")
-        print(f"catchup_due: {current_shouter.catchup_due}")
-        print("--------------------------------")
         return current_shouter
-     
-    # 4. Select based on availability among active members
+
+    # Select based on availability among active members
     candidates = Person.query.filter(Person.id.in_(active_member_ids))\
                              .filter(Person.available == True)\
-                             .order_by(Person.id).all() 
+                             .order_by(Person.shout_sequence).all()
 
+    # If there are available candidates, select the first one
     if candidates:
         current_shouter = candidates[0]
         current_shouter.is_current_shouter = True
@@ -64,18 +61,70 @@ def determine_current_shouter():
         db.session.commit()
         return current_shouter
 
-    # 5. Full Reset Logic - reset only for active members
+    # Full Reset Logic - reset only for active members
     Person.query.filter(Person.id.in_(active_member_ids)).update({Person.available: True}, synchronize_session=False)
     db.session.commit()
 
-    # 6. Fallback - Select first from active members
+    # Fallback - Select first from active members
     current_shouter = Person.query.filter(Person.id.in_(active_member_ids))\
-                                  .order_by(Person.id).first() 
+                                  .order_by(Person.shout_sequence).first()
     if current_shouter:
         current_shouter.is_current_shouter = True
         current_shouter.available = False
         db.session.commit()
         return current_shouter
+    
+def determine_next_shouter():
+    # Get the IDs of active members
+    active_member_ids = get_active_member_ids()
+
+    # Get the current round
+    current_round = get_or_create_current_round()
+
+    # Subquery to find persons who are absent in the current round
+    subquery = (db.session.query(ShoutAbsence.person_id)
+                .filter(ShoutAbsence.round_id == current_round.id)
+                .subquery())
+
+    # Get the current shouter
+    current_shouter = Person.query.filter_by(is_current_shouter=True).first()
+
+    # If there is no current shouter, simply use determine_current_shouter
+    if not current_shouter:
+        return determine_current_shouter()
+
+    # Simulate that the current shouter has completed their shout
+    current_shouter_id = current_shouter.id if current_shouter else None
+
+    # Find candidates who are due for a catchup and not absent in the current round, excluding the current shouter
+    candidates = (Person.query
+                  .filter(Person.id.in_(active_member_ids))
+                  .filter(~exists().where(Person.id == subquery.c.person_id))
+                  .filter(Person.catchup_due == True)
+                  .filter(Person.id != current_shouter_id)
+                  .order_by(Person.shout_sequence)
+                  .all())
+
+    # If there are candidates with catchup_due, select the first one
+    if candidates:
+        return candidates[0]
+
+    # Find available candidates, excluding the current shouter
+    candidates = Person.query.filter(Person.id.in_(active_member_ids))\
+                             .filter(Person.available == True)\
+                             .filter(Person.id != current_shouter_id)\
+                             .order_by(Person.shout_sequence).all()
+
+    # If there are available candidates, select the first one
+    if candidates:
+        return candidates[0]
+
+    # If no available candidates, fallback to the first active person in sequence, excluding the current shouter
+    candidates = Person.query.filter(Person.id.in_(active_member_ids))\
+                             .filter(Person.id != current_shouter_id)\
+                             .order_by(Person.shout_sequence).first()
+
+    return candidates
 
 def update_current_shouter(user_id):
     # First, set everyone else to not be the current shouter
